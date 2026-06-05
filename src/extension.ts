@@ -207,14 +207,33 @@ export function activate(activation: ActivationContext) {
         if (sortedBars.length === 0) {
           lines.push("(ノートが見つかりませんでした)");
         } else {
+          // Collapse consecutive bars that share the same chord name
+          interface BarGroup {
+            start: number;
+            end: number;
+            pitchClasses: number[];
+            chord: ChordInfo;
+          }
+          const groups: BarGroup[] = [];
           for (const bar of sortedBars) {
             const pitchClasses = [...barMap.get(bar)!].sort((a, b) => a - b);
-            const noteNames = pitchClasses.map((p) => NOTE_NAMES[p]!).join(" ");
             const chord = detectChord(pitchClasses);
+            const last = groups[groups.length - 1];
+            if (last && last.chord.name === chord.name && last.end === bar - 1) {
+              last.end = bar;
+            } else {
+              groups.push({ start: bar, end: bar, pitchClasses, chord });
+            }
+          }
+
+          for (const { start, end, pitchClasses, chord } of groups) {
+            const noteNames = pitchClasses.map((p) => NOTE_NAMES[p]!).join(" ");
             const degree = getDegree(chord, key);
-            const label = `Bar ${bar + 1}:`.padEnd(10);
+            const barLabel = start === end
+              ? `Bar ${start + 1}:`
+              : `Bar ${start + 1}-${end + 1}:`;
             lines.push(
-              `${label} ${chord.name.padEnd(10)} (${noteNames.padEnd(12)})  ${degree}`,
+              `${barLabel.padEnd(12)} ${chord.name.padEnd(10)} (${noteNames.padEnd(12)})  ${degree}`,
             );
           }
         }
