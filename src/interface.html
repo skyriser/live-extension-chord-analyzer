@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>コード進行</title>
+  <script>
+    const chordData = decodeURIComponent("__ENCODED_DATA__");
+
+    const isWebView2 = window.chrome && window.chrome.webview;
+    const isWebKit = window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.live;
+
+    function sendMessage(message) {
+      if (isWebView2) window.chrome.webview.postMessage(message);
+      else if (isWebKit) window.webkit.messageHandlers.live.postMessage(message);
+    }
+
+    function closeDialog() {
+      sendMessage({ method: "close_and_send", params: [""] });
+    }
+
+    function copyToClipboard() {
+      const textarea = document.getElementById('output');
+      textarea.select();
+      const btn = document.getElementById('copyBtn');
+
+      const succeed = () => {
+        btn.textContent = 'コピー完了!';
+        btn.classList.add('success');
+        setTimeout(() => {
+          btn.textContent = 'クリップボードにコピー';
+          btn.classList.remove('success');
+        }, 2000);
+      };
+
+      const fail = () => {
+        // Fallback: let user copy manually via Ctrl+C
+        btn.textContent = 'Ctrl+C でコピー';
+        setTimeout(() => { btn.textContent = 'クリップボードにコピー'; }, 3000);
+      };
+
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(chordData).then(succeed).catch(() => {
+          try { document.execCommand('copy') ? succeed() : fail(); } catch { fail(); }
+        });
+      } else {
+        try { document.execCommand('copy') ? succeed() : fail(); } catch { fail(); }
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('output').value = chordData;
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeDialog();
+      });
+    });
+  </script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; }
+    input, button, textarea { font: inherit; }
+
+    :root {
+      --bg: hsl(0, 0%, 21%);
+      --bg-control: hsl(0, 0%, 16%);
+      --bg-input: hsl(0, 0%, 12%);
+      --text: hsl(0, 0%, 71%);
+      --text-dim: hsl(0, 0%, 41%);
+      --border: hsl(0, 0%, 7%);
+      --accent: hsl(31, 100%, 67%);
+    }
+
+    html {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "AbletonSansSmall", monospace;
+      font-size: 11.5px;
+      font-weight: 500;
+      -webkit-font-smoothing: antialiased;
+      height: 100%;
+    }
+
+    body {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      padding: 12px;
+      gap: 8px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    textarea#output {
+      flex: 1;
+      resize: none;
+      background: var(--bg-input);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px;
+      font-family: "Consolas", "Courier New", monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      outline: none;
+      tab-size: 4;
+    }
+
+    textarea#output:focus {
+      outline: 2px solid var(--text-dim);
+      outline-offset: 0;
+    }
+
+    .actions {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    button {
+      font-size: 11px;
+      line-height: 1;
+      background: var(--bg-control);
+      color: var(--text);
+      border: 1px solid var(--border);
+      height: 22px;
+      padding: 0 12px;
+      border-radius: 11px;
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+      transition: background 0.1s;
+    }
+
+    button:hover { background: hsl(0, 0%, 19%); }
+    button:active, button.success {
+      color: hsl(0, 0%, 7%);
+      background: var(--accent);
+    }
+    button:focus { outline: 2px solid var(--text-dim); }
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <span class="title">コード進行スナップショット</span>
+  </div>
+  <textarea id="output" readonly spellcheck="false"></textarea>
+  <div class="actions">
+    <button id="copyBtn" onclick="copyToClipboard()">クリップボードにコピー</button>
+    <button onclick="closeDialog()">閉じる</button>
+  </div>
+</body>
+
+</html>
