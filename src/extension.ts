@@ -72,9 +72,12 @@ export function activate(activation: ActivationContext) {
           parent instanceof MidiTrack ? parent.name : clip.name;
 
         // Group by bar (4 beats = 1 bar, assuming 4/4)
+        // Skip notes shorter than half a bar (< 2 beats) — likely passing tones or arpeggios
+        const MIN_DURATION = 2;
         const barMap = new Map<number, Set<number>>();
         for (const note of notes) {
           if (note.muted) continue;
+          if (note.duration < MIN_DURATION) continue;
           const bar = Math.floor(note.startTime / 4);
           if (!barMap.has(bar)) barMap.set(bar, new Set());
           barMap.get(bar)!.add(note.pitch % 12);
